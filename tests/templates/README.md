@@ -1,6 +1,6 @@
 # Golden templates
 
-`NDC_*.ndisplay` files are golden references for `test/test_golden.cpp`: output of `ToJson(Generate(LoadInputParams(fixture)))` is compared against them.
+`NDC_*.ndisplay` files are golden references for `tests/test_golden.cpp`: generated output from `ToJson(Configuration{...})` (see that file) is compared against them.
 
 ## Provenance
 
@@ -10,7 +10,7 @@ Aligned with (or exported from) Unreal sample content, e.g.:
 
 ## License
 
-- **Generator and tests in this repo**: follow the root `LICENSE` if present.
+- **Generator and tests in this repo**: [MIT License](../../LICENSE) at the repository root.
 - **Unreal / Epic sample material**: subject to the [Unreal Engine EULA](https://www.unrealengine.com/eula) and any other Epic agreements. Redistribution of engine or marketplace assets must comply with those terms.
 - Third-party assets in the source configs require your own clearance before redistributing derived `.ndisplay` files here.
 
