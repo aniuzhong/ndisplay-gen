@@ -67,3 +67,7 @@ set_target_properties(cube_room PROPERTIES EXCLUDE_FROM_ALL TRUE)
 add_executable(cube_room_cluster examples/cube_room_cluster.cpp)
 target_link_libraries(cube_room_cluster PRIVATE ndisplay_gen)
 set_target_properties(cube_room_cluster PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+add_executable(hello_renderstream examples/hello_renderstream.cpp)
+target_link_libraries(hello_renderstream PRIVATE ndisplay_gen)
+set_target_properties(hello_renderstream PROPERTIES EXCLUDE_FROM_ALL TRUE)
