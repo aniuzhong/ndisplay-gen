@@ -49,9 +49,15 @@ ProjectionPolicy ParseProjectionPolicy(const nlohmann::json& j) {
     } else if (t == "Mesh") {
         p.type = ProjectionType::kMesh;
         p.mesh_component = params.value("mesh_component", "");
-    } else {
+    } else if (t == "simple") {
         p.type = ProjectionType::kSimple;
         p.screen_ref = params.value("screen", "");
+    } else {
+        p.type = ProjectionType::kCustom;
+        p.custom_type = t;
+        for (const auto& [k, v] : params.items()) {
+            p.custom_params[k] = v.is_string() ? v.get<std::string>() : v.dump();
+        }
     }
     return p;
 }
@@ -173,6 +179,26 @@ Configuration FromJson(const nlohmann::json& outer) {
             cfg.failover = fo;
         }
 
+        if (cluster.contains("sync")) {
+            const auto& sync = cluster["sync"];
+            if (sync.contains("renderSyncPolicy")) {
+                cfg.render_sync_policy = sync["renderSyncPolicy"].value("type", "ethernet");
+            }
+            if (sync.contains("inputSyncPolicy")) {
+                cfg.input_sync_policy = sync["inputSyncPolicy"].value("type", "ReplicatePrimary");
+            }
+        }
+
+        if (cluster.contains("network")) {
+            const auto& net = cluster["network"];
+            cfg.network.connect_retries_amount = net.value("ConnectRetriesAmount", "300");
+            cfg.network.connect_retry_delay = net.value("ConnectRetryDelay", "1000");
+            cfg.network.game_start_barrier_timeout = net.value("GameStartBarrierTimeout", "18000000");
+            cfg.network.frame_start_barrier_timeout = net.value("FrameStartBarrierTimeout", "1800000");
+            cfg.network.frame_end_barrier_timeout = net.value("FrameEndBarrierTimeout", "1800000");
+            cfg.network.render_sync_barrier_timeout = net.value("RenderSyncBarrierTimeout", "1800000");
+        }
+
         if (cluster.contains("nodes")) {
             for (const auto& [name, nj] : cluster["nodes"].items()) {
                 Node node;
@@ -188,6 +214,18 @@ Configuration FromJson(const nlohmann::json& outer) {
                 if (nj.contains("viewports")) {
                     for (const auto& [vpname, vpj] : nj["viewports"].items()) {
                         node.viewports.push_back(ReadViewport(vpname, vpj));
+                    }
+                }
+                if (nj.contains("postprocess") && !nj["postprocess"].empty()) {
+                    for (const auto& [ppname, ppj] : nj["postprocess"].items()) {
+                        PostProcessEntry entry;
+                        entry.type = ppj.value("type", "");
+                        if (ppj.contains("parameters")) {
+                            for (const auto& [pk, pv] : ppj["parameters"].items()) {
+                                entry.params[pk] = pv.is_string() ? pv.get<std::string>() : pv.dump();
+                            }
+                        }
+                        node.postprocess[ppname] = entry;
                     }
                 }
                 cfg.nodes.push_back(node);
