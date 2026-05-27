@@ -85,7 +85,7 @@ nlohmann::ordered_json OverscanToJson(const Overscan& os) {
 
 nlohmann::ordered_json ProjectionToJson(const ProjectionPolicy& proj) {
     nlohmann::ordered_json j;
-    nlohmann::ordered_json params;
+    nlohmann::ordered_json params = nlohmann::ordered_json::object();
     switch (proj.type) {
         case ProjectionType::kSimple:
             j["type"] = "simple";
@@ -100,6 +100,12 @@ nlohmann::ordered_json ProjectionToJson(const ProjectionPolicy& proj) {
         case ProjectionType::kMesh:
             j["type"] = "Mesh";
             params["mesh_component"] = proj.mesh_component;
+            break;
+        case ProjectionType::kCustom:
+            j["type"] = proj.custom_type;
+            for (const auto& [k, v] : proj.custom_params) {
+                params[k] = v;
+            }
             break;
     }
     j["parameters"] = params;
@@ -135,7 +141,22 @@ nlohmann::ordered_json NodeToJson(const Node& node) {
     win["w"] = node.window.w;
     win["h"] = node.window.h;
     j["window"] = win;
-    j["postprocess"] = nlohmann::ordered_json::object();
+    if (node.postprocess.empty()) {
+        j["postprocess"] = nlohmann::ordered_json::object();
+    } else {
+        nlohmann::ordered_json pp;
+        for (const auto& [name, entry] : node.postprocess) {
+            nlohmann::ordered_json e;
+            e["type"] = entry.type;
+            nlohmann::ordered_json ep = nlohmann::ordered_json::object();
+            for (const auto& [k, v] : entry.params) {
+                ep[k] = v;
+            }
+            e["parameters"] = ep;
+            pp[name] = e;
+        }
+        j["postprocess"] = pp;
+    }
     nlohmann::ordered_json vps = nlohmann::ordered_json::object();
     for (const auto& vp : node.viewports) {
         vps[vp.name] = ViewportToJson(vp);
@@ -203,22 +224,22 @@ nlohmann::ordered_json ToJson(const Configuration& cfg) {
 
     nlohmann::ordered_json sync;
     nlohmann::ordered_json renderSync;
-    renderSync["type"] = "ethernet";
+    renderSync["type"] = cfg.render_sync_policy;
     renderSync["parameters"] = nlohmann::ordered_json::object();
     sync["renderSyncPolicy"] = renderSync;
     nlohmann::ordered_json inputSync;
-    inputSync["type"] = "ReplicatePrimary";
+    inputSync["type"] = cfg.input_sync_policy;
     inputSync["parameters"] = nlohmann::ordered_json::object();
     sync["inputSyncPolicy"] = inputSync;
     cluster["sync"] = sync;
 
     nlohmann::ordered_json network;
-    network["ConnectRetriesAmount"] = "300";
-    network["ConnectRetryDelay"] = "1000";
-    network["GameStartBarrierTimeout"] = "18000000";
-    network["FrameStartBarrierTimeout"] = "1800000";
-    network["FrameEndBarrierTimeout"] = "1800000";
-    network["RenderSyncBarrierTimeout"] = "1800000";
+    network["ConnectRetriesAmount"] = cfg.network.connect_retries_amount;
+    network["ConnectRetryDelay"] = cfg.network.connect_retry_delay;
+    network["GameStartBarrierTimeout"] = cfg.network.game_start_barrier_timeout;
+    network["FrameStartBarrierTimeout"] = cfg.network.frame_start_barrier_timeout;
+    network["FrameEndBarrierTimeout"] = cfg.network.frame_end_barrier_timeout;
+    network["RenderSyncBarrierTimeout"] = cfg.network.render_sync_barrier_timeout;
     cluster["network"] = network;
 
     if (cfg.failover.has_value()) {

@@ -58,6 +58,7 @@ enum class ProjectionType {
     kSimple,
     kEasyBlend,
     kMesh,
+    kCustom,
 };
 
 // -- Scene layer --
@@ -96,6 +97,16 @@ struct ProjectionPolicy {
     std::string     origin_ref;                                     // easyblend
     float           scale               = 0.1F;                     // easyblend
     std::string     mesh_component;                                 // mesh
+
+    std::string                        custom_type;                 // kCustom
+    std::map<std::string, std::string> custom_params;               // kCustom
+};
+
+// -- Post-process --
+
+struct PostProcessEntry {
+    std::string                        type;
+    std::map<std::string, std::string> params;
 };
 
 // -- Cluster layer --
@@ -128,6 +139,7 @@ struct Node {
     bool                  sound       = true;
     bool                  full_screen = true;
     std::vector<Viewport> viewports;
+    std::map<std::string, PostProcessEntry> postprocess;
 };
 
 // -- Top-level --
@@ -149,6 +161,15 @@ struct Diagnostics {
     float max_lag_time = 0.3F;
 };
 
+struct NetworkSettings {
+    std::string connect_retries_amount      = "300";
+    std::string connect_retry_delay         = "1000";
+    std::string game_start_barrier_timeout  = "18000000";
+    std::string frame_start_barrier_timeout = "1800000";
+    std::string frame_end_barrier_timeout   = "1800000";
+    std::string render_sync_barrier_timeout = "1800000";
+};
+
 using CustomParams = std::map<std::string, std::string>;
 
 struct Configuration {
@@ -159,6 +180,9 @@ struct Configuration {
     std::vector<Camera>     cameras;
     std::vector<Node>       nodes;
     PrimaryNode             primary_node;
+    NetworkSettings         network;
+    std::string             render_sync_policy = "ethernet";
+    std::string             input_sync_policy  = "ReplicatePrimary";
     CustomParams            custom_params;
     std::optional<Failover> failover;
     Diagnostics             diagnostics;
